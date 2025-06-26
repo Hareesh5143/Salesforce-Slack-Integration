@@ -6,10 +6,10 @@ public class SlackNotifier implements Queueable, Database.AllowsCallouts {
     }
  
     public void execute(QueueableContext context) {
-        String webhookUrl = 'https://hooks.slack.com/services/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';
+        String webhookUrl = 'https://hooks.slack.com/services/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';
  
         for (Case c : casesToSend) {
-            String caseLink = 'https://yourInstance.salesforce.com/' + c.Id;
+            String caseLink = URL.getOrgDomainUrl().toExternalForm() + '/' + c.Id;
             String body = JSON.serializePretty(new Map<String, Object>{
                 'text' => '*Case Alert*',
                 'blocks' => new List<Object>{

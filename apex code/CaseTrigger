@@ -1,0 +1,20 @@
+trigger CaseTrigger on Case (after insert, after update) {
+    List<Case> caseToNotify = new List<Case>();
+
+    if (Trigger.isInsert && Trigger.isAfter) {
+        caseToNotify.addAll(Trigger.new);
+    }
+
+    if (Trigger.isUpdate && Trigger.isAfter) {
+        for (Case c : Trigger.new) {
+            Case oldCase = Trigger.oldMap.get(c.Id);
+            if (oldCase.Priority != 'High' && c.Priority == 'High') {
+                caseToNotify.add(c);
+            }
+        }
+    }
+
+    if (!caseToNotify.isEmpty()) {
+        System.enqueueJob(new SlackNotifier(caseToNotify));
+    }
+}

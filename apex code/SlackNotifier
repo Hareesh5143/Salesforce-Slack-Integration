@@ -1,0 +1,48 @@
+public class SlackNotifier implements Queueable, Database.AllowsCallouts {
+    List<Case> casesToSend;
+ 
+    public SlackNotifier(List<Case> casesToSend) {
+        this.casesToSend = casesToSend;
+    }
+ 
+    public void execute(QueueableContext context) {
+        String webhookUrl = 'https://hooks.slack.com/services/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';
+ 
+        for (Case c : casesToSend) {
+            String caseLink = 'https://yourInstance.salesforce.com/' + c.Id;
+            String body = JSON.serializePretty(new Map<String, Object>{
+                'text' => '*Case Alert*',
+                'blocks' => new List<Object>{
+                    new Map<String, Object>{
+                        'type' => 'section',
+                        'text' => new Map<String, Object>{
+                            'type' => 'mrkdwn',
+                            'text' => '*Case Number:* ' + c.CaseNumber + '\n*Subject:* ' + c.Subject + '\n*Priority:* ' + c.Priority + '\n<' + caseLink + '|View Case>'
+                        }
+                    }  
+                }
+            });
+ 
+            HttpRequest req = new HttpRequest();
+            req.setEndpoint(webhookUrl);
+            req.setMethod('POST');
+            req.setHeader('Content-Type', 'application/json');
+            req.setBody(body);
+ 
+            HttpResponse res;
+            try {
+                res = new Http().send(req);
+ 
+                Slack_Message_Log__c log = new Slack_Message_Log__c(
+                    Case__c = c.Id,
+                    Message_Sent__c = body,
+                    Status__c = res.getStatusCode() == 200 ? 'Success' : 'Failure',
+                    Timestamp__c = System.now()
+                );
+                insert log;
+            } catch (Exception e) {
+                System.debug('Slack notification failed: ' + e.getMessage());
+            }
+        }
+    }
+}
